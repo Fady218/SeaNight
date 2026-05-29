@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface ReviewInput {
+  bookingId: number;
+  propertyId: number;
+  reviewerId: number;
+  rating: number;
+  comment?: string;
 }

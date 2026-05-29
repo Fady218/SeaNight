@@ -1,6 +1,6 @@
-# [Project name]
+# SeaNight
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Egypt's trust-first short-term rental platform for chalets, yachts, and hotel rooms — insurance-backed, ID-verified, and built for Egyptian domestic tourism.
 
 ## Run & Operate
 
