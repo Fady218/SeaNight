@@ -261,6 +261,23 @@ export const UpdateBookingStatusResponse = zod.object({
 
 
 /**
+ * @summary List all users
+ */
+export const ListUsersResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "nationalId": zod.string().nullish(),
+  "role": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+
+/**
  * @summary Create a user
  */
 

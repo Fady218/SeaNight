@@ -6,6 +6,7 @@ import {
   ListReviewsResponseItem,
   CreateReviewBody,
 } from "@workspace/api-zod";
+import { serializeDates } from "../lib/serialize";
 
 const router: IRouter = Router();
 
@@ -18,7 +19,7 @@ router.get("/reviews", async (req, res): Promise<void> => {
     .where(propertyId ? eq(reviewsTable.propertyId, Number(propertyId)) : undefined)
     .orderBy(reviewsTable.createdAt);
 
-  res.json(ListReviewsResponse.parse(reviews));
+  res.json(ListReviewsResponse.parse(serializeDates(reviews)));
 });
 
 router.post("/reviews", async (req, res): Promise<void> => {
@@ -41,7 +42,7 @@ router.post("/reviews", async (req, res): Promise<void> => {
     .set({ rating: avg.toFixed(2), reviewCount: allReviews.length })
     .where(eq(propertiesTable.id, parsed.data.propertyId));
 
-  res.status(201).json(ListReviewsResponseItem.parse(review));
+  res.status(201).json(ListReviewsResponseItem.parse(serializeDates(review)));
 });
 
 export default router;

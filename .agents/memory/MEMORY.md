@@ -1,0 +1,1 @@
+- [Drizzle date serialization](drizzle-date-serialization.md) — Drizzle returns Date objects; Zod schemas expect strings — wrap all DB results in serializeDates() before parsing.

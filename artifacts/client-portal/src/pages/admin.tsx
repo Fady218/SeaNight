@@ -2,34 +2,80 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import {
   LayoutDashboard, Home, BookOpen, Users, TrendingUp,
-  Shield, CheckCircle, Clock, XCircle, Plus, RefreshCw,
-  ChevronRight, BarChart3, Anchor
+  Shield, CheckCircle, Clock, Plus, RefreshCw,
+  ChevronRight, BarChart3, Anchor, X, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   useGetAdminStats,
   useListBookings,
   useListProperties,
+  useListUsers,
   useUpdateBookingStatus,
   useSeedData,
+  useCreateProperty,
   getListBookingsQueryKey,
   getGetAdminStatsQueryKey,
+  getListPropertiesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatPrice, formatDate, getStatusColor, calculateNights } from "@/lib/utils";
 
 type Tab = "overview" | "bookings" | "properties" | "users";
 
+const CITIES = ["Ain Sokhna", "Hurghada", "El Gouna", "North Coast", "Sharm El Sheikh", "Dahab", "Luxor", "Aswan", "Alexandria", "Cairo"];
+const PROPERTY_TYPES = ["chalet", "yacht", "hotel"];
+
+const COMMON_AMENITIES = [
+  "WiFi", "Air Conditioning", "Beach Access", "Private Pool", "Sea View",
+  "Parking", "Kitchen", "BBQ", "Smart TV", "Gym", "Spa", "Room Service",
+  "Captain & Crew", "Snorkeling Gear", "Dive Center", "Chef Service",
+];
+
+interface PropertyFormState {
+  title: string;
+  description: string;
+  type: string;
+  city: string;
+  location: string;
+  pricePerNight: string;
+  maxGuests: string;
+  bedrooms: string;
+  bathrooms: string;
+  amenities: string[];
+  imageUrl: string;
+}
+
+const emptyForm = (): PropertyFormState => ({
+  title: "", description: "", type: "chalet", city: "Ain Sokhna", location: "",
+  pricePerNight: "", maxGuests: "4", bedrooms: "2", bathrooms: "1",
+  amenities: [], imageUrl: "",
+});
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [showAddProperty, setShowAddProperty] = useState(false);
+  const [form, setForm] = useState<PropertyFormState>(emptyForm());
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
 
   const { data: stats, isLoading: statsLoading } = useGetAdminStats();
   const { data: bookings, isLoading: bookingsLoading } = useListBookings();
   const { data: properties } = useListProperties();
+  const { data: users, isLoading: usersLoading } = useListUsers();
   const updateStatus = useUpdateBookingStatus();
   const seedMutation = useSeedData();
+  const createProperty = useCreateProperty();
 
   function getPropertyTitle(id: number) {
     return properties?.find((p) => p.id === id)?.title ?? `Property #${id}`;
@@ -52,9 +98,50 @@ export default function AdminPage() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListPropertiesQueryKey() });
         window.location.reload();
       },
     });
+  }
+
+  function toggleAmenity(amenity: string) {
+    setForm((f) => ({
+      ...f,
+      amenities: f.amenities.includes(amenity)
+        ? f.amenities.filter((a) => a !== amenity)
+        : [...f.amenities, amenity],
+    }));
+  }
+
+  function handleCreateProperty(e: React.FormEvent) {
+    e.preventDefault();
+    createProperty.mutate(
+      {
+        data: {
+          ownerId: 1,
+          title: form.title,
+          description: form.description,
+          type: form.type,
+          city: form.city,
+          location: form.location,
+          pricePerNight: form.pricePerNight,
+          maxGuests: Number(form.maxGuests),
+          bedrooms: Number(form.bedrooms),
+          bathrooms: Number(form.bathrooms),
+          amenities: form.amenities,
+          images: form.imageUrl ? [form.imageUrl] : [],
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListPropertiesQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
+          setShowAddProperty(false);
+          setForm(emptyForm());
+          setActiveTab("properties");
+        },
+      }
+    );
   }
 
   const statusNextAction: Record<string, { label: string; next: string; color: string }> = {
@@ -103,7 +190,14 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-gray-800">
+        <div className="p-3 space-y-1 border-t border-gray-800">
+          <button
+            onClick={() => setShowAddProperty(true)}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-cyan-400 hover:text-white hover:bg-gray-800 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Property
+          </button>
           <button
             onClick={handleSeed}
             disabled={seedMutation.isPending}
@@ -117,7 +211,6 @@ export default function AdminPage() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        {/* Header */}
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900 capitalize">
@@ -139,7 +232,6 @@ export default function AdminPage() {
           {/* OVERVIEW TAB */}
           {activeTab === "overview" && (
             <div className="space-y-6">
-              {/* Stats Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {statsLoading ? (
                   Array.from({ length: 4 }).map((_, i) => (
@@ -155,7 +247,6 @@ export default function AdminPage() {
                 ) : null}
               </div>
 
-              {/* Booking Status Summary */}
               {stats && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                   <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -184,7 +275,6 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Recent Bookings */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                   <h2 className="font-semibold text-gray-900">Recent Bookings</h2>
@@ -224,7 +314,7 @@ export default function AdminPage() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="font-semibold text-gray-900">Properties ({properties?.length ?? 0})</h2>
-                <Button size="sm" onClick={() => navigate("/listings")} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
+                <Button size="sm" onClick={() => setShowAddProperty(true)} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
                   <Plus className="w-3.5 h-3.5 mr-1" /> Add Property
                 </Button>
               </div>
@@ -242,7 +332,11 @@ export default function AdminPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {properties?.map((p) => (
-                      <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={p.id}
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/property/${p.id}`)}
+                      >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             {p.images?.[0] && (
@@ -291,50 +385,249 @@ export default function AdminPage() {
           {activeTab === "users" && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900">Platform Users</h2>
+                <h2 className="font-semibold text-gray-900">Platform Users ({users?.length ?? 0})</h2>
                 <p className="text-sm text-gray-400 mt-0.5">All registered users with ID verification status</p>
               </div>
               <div className="p-6">
-                <div className="grid gap-3">
-                  {[
-                    { name: "Yalla Masayef", email: "owner@yallamasayef.com", role: "owner", verified: true },
-                    { name: "Ahmed Hassan", email: "ahmed@example.com", role: "tenant", verified: true },
-                    { name: "Sara Mohamed", email: "sara@example.com", role: "tenant", verified: true },
-                    { name: "Admin", email: "admin@seanight.com", role: "admin", verified: true },
-                  ].map((user) => (
-                    <div key={user.email} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
-                          user.role === "admin" ? "bg-purple-600" :
-                          user.role === "owner" ? "bg-blue-600" : "bg-cyan-600"
-                        }`}>
-                          {user.name[0]}
+                {usersLoading ? (
+                  <div className="space-y-3">
+                    {[1,2,3,4].map(i => <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />)}
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {(users ?? []).map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                            user.role === "admin" ? "bg-purple-600" :
+                            user.role === "owner" ? "bg-blue-600" : "bg-cyan-600"
+                          }`}>
+                            {user.name[0]}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">{user.name}</div>
+                            <div className="text-xs text-gray-400">{user.email}</div>
+                            {user.phone && <div className="text-xs text-gray-400">{user.phone}</div>}
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{user.name}</div>
-                          <div className="text-xs text-gray-400">{user.email}</div>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+                            user.role === "admin" ? "bg-purple-100 text-purple-700" :
+                            user.role === "owner" ? "bg-blue-100 text-blue-700" :
+                            "bg-gray-100 text-gray-700"
+                          }`}>{user.role}</span>
+                          {user.nationalId ? (
+                            <span className="flex items-center gap-1 text-xs text-emerald-600">
+                              <CheckCircle className="w-3.5 h-3.5" /> ID Verified
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">Unverified</span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
-                          user.role === "admin" ? "bg-purple-100 text-purple-700" :
-                          user.role === "owner" ? "bg-blue-100 text-blue-700" :
-                          "bg-gray-100 text-gray-700"
-                        }`}>{user.role}</span>
-                        {user.verified && (
-                          <span className="flex items-center gap-1 text-xs text-emerald-600">
-                            <CheckCircle className="w-3.5 h-3.5" /> ID Verified
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
       </main>
+
+      {/* Add Property Dialog */}
+      <Dialog open={showAddProperty} onOpenChange={setShowAddProperty}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <Plus className="w-3.5 h-3.5 text-white" />
+              </div>
+              Add New Property
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateProperty} className="space-y-4 mt-2">
+            <div>
+              <Label>Property Title *</Label>
+              <Input
+                required
+                value={form.title}
+                onChange={e => setForm({ ...form, title: e.target.value })}
+                placeholder="e.g. Luxury Chalet with Sea View"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Type *</Label>
+                <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROPERTY_TYPES.map(t => (
+                      <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>City *</Label>
+                <Select value={form.city} onValueChange={v => setForm({ ...form, city: v })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CITIES.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label>Location / Compound Name *</Label>
+              <Input
+                required
+                value={form.location}
+                onChange={e => setForm({ ...form, location: e.target.value })}
+                placeholder="e.g. Porto Sokhna, Ain Sokhna Beach Resort"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label>Description *</Label>
+              <Textarea
+                required
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                placeholder="Describe the property, its views, special features..."
+                className="mt-1 min-h-20"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Price per Night (EGP) *</Label>
+                <Input
+                  required
+                  type="number"
+                  min="1"
+                  value={form.pricePerNight}
+                  onChange={e => setForm({ ...form, pricePerNight: e.target.value })}
+                  placeholder="2500"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Max Guests *</Label>
+                <Input
+                  required
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={form.maxGuests}
+                  onChange={e => setForm({ ...form, maxGuests: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Bedrooms *</Label>
+                <Input
+                  required
+                  type="number"
+                  min="0"
+                  value={form.bedrooms}
+                  onChange={e => setForm({ ...form, bedrooms: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Bathrooms *</Label>
+                <Input
+                  required
+                  type="number"
+                  min="0"
+                  value={form.bathrooms}
+                  onChange={e => setForm({ ...form, bathrooms: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Amenities</Label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {COMMON_AMENITIES.map(a => (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => toggleAmenity(a)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      form.amenities.includes(a)
+                        ? "bg-cyan-500 text-white border-cyan-500"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-cyan-400 hover:text-cyan-600"
+                    }`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label>Image URL</Label>
+              <Input
+                type="url"
+                value={form.imageUrl}
+                onChange={e => setForm({ ...form, imageUrl: e.target.value })}
+                placeholder="https://images.unsplash.com/photo-..."
+                className="mt-1"
+              />
+              {form.imageUrl && (
+                <img
+                  src={form.imageUrl}
+                  alt="Preview"
+                  className="mt-2 w-full h-32 object-cover rounded-lg border border-gray-200"
+                  onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              )}
+            </div>
+
+            {createProperty.error && (
+              <p className="text-sm text-red-500">Failed to create property. Please check the form.</p>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setShowAddProperty(false); setForm(emptyForm()); }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createProperty.isPending}
+                className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-white"
+              >
+                {createProperty.isPending ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
+                ) : (
+                  "Create Property"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -400,6 +693,7 @@ function BookingsTable({
                 <td className="px-6 py-4 text-gray-500">
                   <div className="text-xs">{formatDate(b.checkIn)}</div>
                   <div className="text-xs text-gray-400">→ {formatDate(b.checkOut)}</div>
+                  <div className="text-xs text-gray-300">{calculateNights(b.checkIn, b.checkOut)} nights</div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="font-medium text-gray-900">{formatPrice(b.totalAmount)}</div>

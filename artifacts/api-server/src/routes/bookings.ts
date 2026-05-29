@@ -9,6 +9,7 @@ import {
   GetBookingParams,
   UpdateBookingStatusParams,
 } from "@workspace/api-zod";
+import { serializeDates } from "../lib/serialize";
 
 const router: IRouter = Router();
 
@@ -26,7 +27,7 @@ router.get("/bookings", async (req, res): Promise<void> => {
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(bookingsTable.createdAt);
 
-  res.json(ListBookingsResponse.parse(bookings));
+  res.json(ListBookingsResponse.parse(serializeDates(bookings)));
 });
 
 router.post("/bookings", async (req, res): Promise<void> => {
@@ -40,7 +41,7 @@ router.post("/bookings", async (req, res): Promise<void> => {
     checkIn: new Date(parsed.data.checkIn),
     checkOut: new Date(parsed.data.checkOut),
   }).returning();
-  res.status(201).json(GetBookingResponse.parse(booking));
+  res.status(201).json(GetBookingResponse.parse(serializeDates(booking)));
 });
 
 router.get("/bookings/:id", async (req, res): Promise<void> => {
@@ -54,7 +55,7 @@ router.get("/bookings/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Booking not found" });
     return;
   }
-  res.json(GetBookingResponse.parse(booking));
+  res.json(GetBookingResponse.parse(serializeDates(booking)));
 });
 
 router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
@@ -77,7 +78,7 @@ router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Booking not found" });
     return;
   }
-  res.json(GetBookingResponse.parse(booking));
+  res.json(GetBookingResponse.parse(serializeDates(booking)));
 });
 
 export default router;

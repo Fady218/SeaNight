@@ -30,11 +30,9 @@ export default function Navbar() {
             <Link href="/dashboard" className={cn("text-sm font-medium transition-colors hover:text-cyan-600", location.startsWith("/dashboard") ? "text-cyan-600" : "text-gray-600")}>
               My Bookings
             </Link>
-            {isAdmin && (
-              <Link href="/admin" className="text-sm font-medium text-purple-600">
-                Admin
-              </Link>
-            )}
+            <Link href="/broker" className={cn("text-sm font-medium transition-colors hover:text-cyan-600", location.startsWith("/broker") ? "text-cyan-600" : "text-gray-600")}>
+              For Brokers
+            </Link>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -60,6 +58,7 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-gray-100 px-4 py-3 space-y-3">
           <Link href="/listings" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setOpen(false)}>Browse Properties</Link>
           <Link href="/dashboard" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setOpen(false)}>My Bookings</Link>
+          <Link href="/broker" className="block text-sm font-medium text-cyan-600 py-2" onClick={() => setOpen(false)}>For Brokers</Link>
           <Link href="/admin" className="block text-sm font-medium text-purple-600 py-2" onClick={() => setOpen(false)}>Admin Dashboard</Link>
         </div>
       )}

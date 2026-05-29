@@ -6,8 +6,13 @@ import {
   CreateUserBody,
   GetUserParams,
 } from "@workspace/api-zod";
-
+import { serializeDates } from "../lib/serialize";
 const router: IRouter = Router();
+
+router.get("/users", async (req, res): Promise<void> => {
+  const users = await db.select().from(usersTable).orderBy(usersTable.id);
+  res.json(users.map((u) => GetUserResponse.parse(serializeDates(u))));
+});
 
 router.post("/users", async (req, res): Promise<void> => {
   const parsed = CreateUserBody.safeParse(req.body);
@@ -16,7 +21,7 @@ router.post("/users", async (req, res): Promise<void> => {
     return;
   }
   const [user] = await db.insert(usersTable).values(parsed.data).returning();
-  res.status(201).json(GetUserResponse.parse(user));
+  res.status(201).json(GetUserResponse.parse(serializeDates(user)));
 });
 
 router.get("/users/:id", async (req, res): Promise<void> => {
@@ -30,7 +35,7 @@ router.get("/users/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "User not found" });
     return;
   }
-  res.json(GetUserResponse.parse(user));
+  res.json(GetUserResponse.parse(serializeDates(user)));
 });
 
 export default router;

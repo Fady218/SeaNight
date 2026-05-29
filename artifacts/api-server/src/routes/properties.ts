@@ -10,6 +10,7 @@ import {
   UpdatePropertyParams,
   DeletePropertyParams,
 } from "@workspace/api-zod";
+import { serializeDates } from "../lib/serialize";
 
 const router: IRouter = Router();
 
@@ -40,7 +41,7 @@ router.get("/properties", async (req, res): Promise<void> => {
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(sql`${propertiesTable.createdAt} desc`);
 
-  res.json(ListPropertiesResponse.parse(properties));
+  res.json(ListPropertiesResponse.parse(serializeDates(properties)));
 });
 
 router.post("/properties", async (req, res): Promise<void> => {
@@ -50,7 +51,7 @@ router.post("/properties", async (req, res): Promise<void> => {
     return;
   }
   const [property] = await db.insert(propertiesTable).values(parsed.data).returning();
-  res.status(201).json(GetPropertyResponse.parse(property));
+  res.status(201).json(GetPropertyResponse.parse(serializeDates(property)));
 });
 
 router.get("/properties/:id", async (req, res): Promise<void> => {
@@ -64,7 +65,7 @@ router.get("/properties/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Property not found" });
     return;
   }
-  res.json(GetPropertyResponse.parse(property));
+  res.json(GetPropertyResponse.parse(serializeDates(property)));
 });
 
 router.patch("/properties/:id", async (req, res): Promise<void> => {
@@ -87,7 +88,7 @@ router.patch("/properties/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Property not found" });
     return;
   }
-  res.json(GetPropertyResponse.parse(property));
+  res.json(GetPropertyResponse.parse(serializeDates(property)));
 });
 
 router.delete("/properties/:id", async (req, res): Promise<void> => {
