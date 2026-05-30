@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, bookingsTable } from "@workspace/db";
+import { db, bookingsTable, propertiesTable } from "@workspace/db";
 import {
   ListBookingsResponse,
   GetBookingResponse,
@@ -10,6 +10,11 @@ import {
   UpdateBookingStatusParams,
 } from "@workspace/api-zod";
 import { serializeDates } from "../lib/serialize";
+
+const SECURITY_DEPOSIT = 2000;
+const GUEST_FEE_RATE = 0.03;
+const PLATFORM_FEE_RATE = 0.10;
+const INSURANCE_RATE = 0.01;
 
 const router: IRouter = Router();
 
@@ -36,10 +41,41 @@ router.post("/bookings", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+
+  const checkIn = new Date(parsed.data.checkIn);
+  const checkOut = new Date(parsed.data.checkOut);
+
+  const nights = Math.max(1, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)));
+
+  const [property] = await db.select().from(propertiesTable).where(eq(propertiesTable.id, parsed.data.propertyId));
+  if (!property) {
+    res.status(404).json({ error: "Property not found" });
+    return;
+  }
+
+  const baseRental = Number(property.pricePerNight) * nights;
+  const guestFee = baseRental * GUEST_FEE_RATE;
+  const rentalSubtotal = baseRental + guestFee;
+  const insurancePremium = baseRental * INSURANCE_RATE;
+  const platformFee = rentalSubtotal * PLATFORM_FEE_RATE;
+  const ownerAmount = rentalSubtotal - platformFee;
+  const totalAmount = rentalSubtotal + SECURITY_DEPOSIT;
+
   const [booking] = await db.insert(bookingsTable).values({
-    ...parsed.data,
-    checkIn: new Date(parsed.data.checkIn),
-    checkOut: new Date(parsed.data.checkOut),
+    propertyId: parsed.data.propertyId,
+    tenantId: parsed.data.tenantId,
+    brokerId: parsed.data.brokerId ?? null,
+    checkIn,
+    checkOut,
+    guests: parsed.data.guests,
+    paymentMethod: parsed.data.paymentMethod ?? "fawry",
+    notes: parsed.data.notes ?? null,
+    totalAmount: totalAmount.toFixed(2),
+    platformFee: platformFee.toFixed(2),
+    ownerAmount: ownerAmount.toFixed(2),
+    securityDeposit: SECURITY_DEPOSIT.toFixed(2),
+    securityDepositStatus: "held",
+    insurancePremium: insurancePremium.toFixed(2),
   }).returning();
   res.status(201).json(GetBookingResponse.parse(serializeDates(booking)));
 });

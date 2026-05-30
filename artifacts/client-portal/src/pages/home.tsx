@@ -50,7 +50,7 @@ export default function HomePage() {
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm text-white/90 text-sm px-4 py-2 rounded-full border border-white/20 mb-6">
             <Shield className="w-4 h-4 text-cyan-400" />
-            <span>Insurance-backed bookings up to 30,000 EGP</span>
+            <span>Up to 2,000,000 EGP Property &amp; Yacht Insurance Protection</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">

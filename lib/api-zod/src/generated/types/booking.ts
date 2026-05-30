@@ -22,6 +22,9 @@ export interface Booking {
   paymentMethod: string;
   /** @nullable */
   notes?: string | null;
+  securityDeposit: string;
+  securityDepositStatus: string;
+  insurancePremium: string;
   createdAt: string;
   updatedAt: string;
 }

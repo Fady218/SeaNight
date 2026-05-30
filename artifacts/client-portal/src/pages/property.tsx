@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import {
   MapPin, Users, Bed, Bath, Star, Shield, ChevronLeft,
-  CheckCircle, Wifi, Zap, Award
+  CheckCircle, Zap, Award, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +19,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { formatPrice, formatDate, calculateNights } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 
+const GUEST_FEE_RATE = 0.03;
 const PLATFORM_FEE_RATE = 0.10;
-const GUEST_RATE = 0.03;
-const OWNER_RATE = 0.07;
+const INSURANCE_RATE = 0.01;
+const SECURITY_DEPOSIT = 2000;
 
 export default function PropertyPage() {
   const { id } = useParams<{ id: string }>();
@@ -66,11 +67,13 @@ export default function PropertyPage() {
   }
 
   const nights = checkIn && checkOut ? calculateNights(checkIn, checkOut) : 0;
-  const baseAmount = nights * Number(property.pricePerNight);
-  const guestFee = baseAmount * GUEST_RATE;
-  const totalAmount = baseAmount + guestFee;
-  const platformFee = totalAmount * PLATFORM_FEE_RATE;
-  const ownerAmount = totalAmount - platformFee;
+  const baseRental = nights * Number(property.pricePerNight);
+  const guestFee = baseRental * GUEST_FEE_RATE;
+  const rentalSubtotal = baseRental + guestFee;
+  const insurancePremium = baseRental * INSURANCE_RATE;
+  const platformFee = rentalSubtotal * PLATFORM_FEE_RATE;
+  const ownerAmount = rentalSubtotal - platformFee;
+  const totalAmount = rentalSubtotal + SECURITY_DEPOSIT;
 
   function handleBook() {
     if (!checkIn || !checkOut) return;
@@ -205,7 +208,7 @@ export default function PropertyPage() {
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {[
-                    { icon: <Shield className="w-4 h-4 text-cyan-600" />, text: "GIS Insurance coverage up to 30,000 EGP" },
+                    { icon: <Shield className="w-4 h-4 text-cyan-600" />, text: "Up to 2,000,000 EGP Property & Yacht Insurance Protection" },
                     { icon: <CheckCircle className="w-4 h-4 text-cyan-600" />, text: "National ID verified owner & tenants" },
                     { icon: <Zap className="w-4 h-4 text-cyan-600" />, text: "Payment held in escrow until check-out" },
                     { icon: <Award className="w-4 h-4 text-cyan-600" />, text: "Money-back if property doesn't match photos" },
@@ -321,20 +324,34 @@ export default function PropertyPage() {
                     </div>
 
                     {nights > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
+                      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2.5 text-sm">
                         <div className="flex justify-between text-gray-600">
-                          <span>{formatPrice(property.pricePerNight)} × {nights} nights</span>
-                          <span>{formatPrice(baseAmount)}</span>
+                          <span>{formatPrice(property.pricePerNight)} × {nights} {nights === 1 ? "night" : "nights"}</span>
+                          <span>{formatPrice(baseRental)}</span>
                         </div>
                         <div className="flex justify-between text-gray-600">
                           <span>SeaNight service fee (3%)</span>
                           <span>{formatPrice(guestFee)}</span>
                         </div>
-                        <div className="flex justify-between font-bold text-gray-900 text-base pt-2 border-t border-gray-100">
-                          <span>Total</span>
+                        <div className="flex justify-between items-center text-gray-600">
+                          <span className="flex items-center gap-1.5">
+                            Refundable security deposit
+                            <span className="relative group cursor-pointer">
+                              <Info className="w-3.5 h-3.5 text-gray-400" />
+                              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 text-xs bg-gray-900 text-white rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 text-center leading-relaxed">
+                                100% refundable within 48 hours after checkout if no damages are reported.
+                              </span>
+                            </span>
+                          </span>
+                          <span className="text-cyan-700 font-medium">{formatPrice(SECURITY_DEPOSIT)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-gray-900 text-base pt-2.5 border-t border-gray-100">
+                          <span>Total Due Now</span>
                           <span>{formatPrice(totalAmount)}</span>
                         </div>
-                        <p className="text-xs text-gray-400">Payment held in escrow until end of stay</p>
+                        <p className="text-xs text-gray-400 flex items-center gap-1">
+                          <Shield className="w-3 h-3" /> Rental payment held in escrow · deposit returned post-checkout
+                        </p>
                       </div>
                     )}
 

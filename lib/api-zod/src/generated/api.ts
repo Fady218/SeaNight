@@ -180,6 +180,9 @@ export const ListBookingsResponseItem = zod.object({
   "status": zod.string(),
   "paymentMethod": zod.string(),
   "notes": zod.string().nullish(),
+  "securityDeposit": zod.string(),
+  "securityDepositStatus": zod.string(),
+  "insurancePremium": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -200,7 +203,10 @@ export const CreateBookingBody = zod.object({
   "platformFee": zod.string(),
   "ownerAmount": zod.string(),
   "paymentMethod": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "securityDeposit": zod.string().optional(),
+  "securityDepositStatus": zod.string().optional(),
+  "insurancePremium": zod.string().optional()
 })
 
 
@@ -225,6 +231,9 @@ export const GetBookingResponse = zod.object({
   "status": zod.string(),
   "paymentMethod": zod.string(),
   "notes": zod.string().nullish(),
+  "securityDeposit": zod.string(),
+  "securityDepositStatus": zod.string(),
+  "insurancePremium": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })
@@ -255,6 +264,9 @@ export const UpdateBookingStatusResponse = zod.object({
   "status": zod.string(),
   "paymentMethod": zod.string(),
   "notes": zod.string().nullish(),
+  "securityDeposit": zod.string(),
+  "securityDepositStatus": zod.string(),
+  "insurancePremium": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string()
 })

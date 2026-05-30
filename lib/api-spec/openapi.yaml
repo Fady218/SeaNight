@@ -499,7 +499,7 @@ components:
 
     Booking:
       type: object
-      required: [id, propertyId, tenantId, checkIn, checkOut, guests, totalAmount, platformFee, ownerAmount, status, paymentMethod, createdAt, updatedAt]
+      required: [id, propertyId, tenantId, checkIn, checkOut, guests, totalAmount, platformFee, ownerAmount, status, paymentMethod, securityDeposit, securityDepositStatus, insurancePremium, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -527,6 +527,12 @@ components:
           type: string
         notes:
           type: ["string", "null"]
+        securityDeposit:
+          type: string
+        securityDepositStatus:
+          type: string
+        insurancePremium:
+          type: string
         createdAt:
           type: string
         updatedAt:
@@ -557,6 +563,12 @@ components:
         paymentMethod:
           type: string
         notes:
+          type: string
+        securityDeposit:
+          type: string
+        securityDepositStatus:
+          type: string
+        insurancePremium:
           type: string
 
     BookingStatusUpdate:

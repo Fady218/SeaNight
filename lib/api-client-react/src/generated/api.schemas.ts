@@ -84,6 +84,9 @@ export interface Booking {
   paymentMethod: string;
   /** @nullable */
   notes?: string | null;
+  securityDeposit: string;
+  securityDepositStatus: string;
+  insurancePremium: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +104,9 @@ export interface BookingInput {
   ownerAmount: string;
   paymentMethod?: string;
   notes?: string;
+  securityDeposit?: string;
+  securityDepositStatus?: string;
+  insurancePremium?: string;
 }
 
 export interface BookingStatusUpdate {

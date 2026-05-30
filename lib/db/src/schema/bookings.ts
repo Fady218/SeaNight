@@ -16,6 +16,9 @@ export const bookingsTable = pgTable("bookings", {
   status: text("status").notNull().default("pending"),
   paymentMethod: text("payment_method").notNull().default("fawry"),
   notes: text("notes"),
+  securityDeposit: numeric("security_deposit", { precision: 10, scale: 2 }).notNull().default("2000"),
+  securityDepositStatus: text("security_deposit_status").notNull().default("held"),
+  insurancePremium: numeric("insurance_premium", { precision: 10, scale: 2 }).notNull().default("0"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

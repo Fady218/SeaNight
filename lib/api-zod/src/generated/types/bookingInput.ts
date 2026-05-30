@@ -19,4 +19,7 @@ export interface BookingInput {
   ownerAmount: string;
   paymentMethod?: string;
   notes?: string;
+  securityDeposit?: string;
+  securityDepositStatus?: string;
+  insurancePremium?: string;
 }
