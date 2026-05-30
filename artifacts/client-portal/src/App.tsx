@@ -9,6 +9,7 @@ import PropertyPage from "@/pages/property";
 import DashboardPage from "@/pages/dashboard";
 import AdminPage from "@/pages/admin";
 import BrokerPage from "@/pages/broker";
+import OwnerPage from "@/pages/owner";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/broker" component={BrokerPage} />
+      <Route path="/owner" component={OwnerPage} />
       <Route component={NotFound} />
     </Switch>
   );

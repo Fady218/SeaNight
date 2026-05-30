@@ -36,8 +36,13 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
+            <Link href="/owner">
+              <Button variant="outline" size="sm" className="text-gray-600 border-gray-200 hover:border-cyan-400 hover:text-cyan-600">
+                List Your Property
+              </Button>
+            </Link>
             <Link href="/admin">
-              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-purple-600">
+              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-purple-600">
                 Admin
               </Button>
             </Link>
@@ -59,6 +64,7 @@ export default function Navbar() {
           <Link href="/listings" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setOpen(false)}>Browse Properties</Link>
           <Link href="/dashboard" className="block text-sm font-medium text-gray-700 py-2" onClick={() => setOpen(false)}>My Bookings</Link>
           <Link href="/broker" className="block text-sm font-medium text-cyan-600 py-2" onClick={() => setOpen(false)}>For Brokers</Link>
+          <Link href="/owner" className="block text-sm font-medium text-cyan-600 py-2" onClick={() => setOpen(false)}>List Your Property</Link>
           <Link href="/admin" className="block text-sm font-medium text-purple-600 py-2" onClick={() => setOpen(false)}>Admin Dashboard</Link>
         </div>
       )}
