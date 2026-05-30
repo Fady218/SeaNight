@@ -117,4 +117,28 @@ router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
   res.json(GetBookingResponse.parse(serializeDates(booking)));
 });
 
+router.patch("/bookings/:id/deposit", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!id || isNaN(id)) {
+    res.status(400).json({ error: "Invalid booking id" });
+    return;
+  }
+  const { securityDepositStatus } = req.body as { securityDepositStatus?: string; reason?: string };
+  const validStatuses = ["held", "refunded", "deducted"];
+  if (!securityDepositStatus || !validStatuses.includes(securityDepositStatus)) {
+    res.status(400).json({ error: `securityDepositStatus must be one of: ${validStatuses.join(", ")}` });
+    return;
+  }
+  const [booking] = await db
+    .update(bookingsTable)
+    .set({ securityDepositStatus })
+    .where(eq(bookingsTable.id, id))
+    .returning();
+  if (!booking) {
+    res.status(404).json({ error: "Booking not found" });
+    return;
+  }
+  res.json(GetBookingResponse.parse(serializeDates(booking)));
+});
+
 export default router;

@@ -273,6 +273,40 @@ export const UpdateBookingStatusResponse = zod.object({
 
 
 /**
+ * @summary Update security deposit status
+ */
+export const UpdateDepositStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateDepositStatusBody = zod.object({
+  "securityDepositStatus": zod.string(),
+  "reason": zod.string().optional()
+})
+
+export const UpdateDepositStatusResponse = zod.object({
+  "id": zod.number(),
+  "propertyId": zod.number(),
+  "tenantId": zod.number(),
+  "brokerId": zod.number().nullish(),
+  "checkIn": zod.string(),
+  "checkOut": zod.string(),
+  "guests": zod.number(),
+  "totalAmount": zod.string(),
+  "platformFee": zod.string(),
+  "ownerAmount": zod.string(),
+  "status": zod.string(),
+  "paymentMethod": zod.string(),
+  "notes": zod.string().nullish(),
+  "securityDeposit": zod.string(),
+  "securityDepositStatus": zod.string(),
+  "insurancePremium": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
  * @summary List all users
  */
 export const ListUsersResponseItem = zod.object({

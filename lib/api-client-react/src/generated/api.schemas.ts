@@ -113,6 +113,11 @@ export interface BookingStatusUpdate {
   status: string;
 }
 
+export interface DepositStatusUpdate {
+  securityDepositStatus: string;
+  reason?: string;
+}
+
 export interface User {
   id: number;
   name: string;

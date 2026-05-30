@@ -24,6 +24,7 @@ import type {
   Booking,
   BookingInput,
   BookingStatusUpdate,
+  DepositStatusUpdate,
   ErrorResponse,
   HealthStatus,
   ListBookingsParams,
@@ -804,6 +805,78 @@ export const useUpdateBookingStatus = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUpdateBookingStatusMutationOptions(options));
+    }
+
+export const getUpdateDepositStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/bookings/${id}/deposit`
+}
+
+/**
+ * @summary Update security deposit status
+ */
+export const updateDepositStatus = async (id: number,
+    depositStatusUpdate: DepositStatusUpdate, options?: RequestInit): Promise<Booking> => {
+
+  return customFetch<Booking>(getUpdateDepositStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      depositStatusUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateDepositStatusMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDepositStatus>>, TError,{id: number;data: BodyType<DepositStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDepositStatus>>, TError,{id: number;data: BodyType<DepositStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateDepositStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDepositStatus>>, {id: number;data: BodyType<DepositStatusUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateDepositStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDepositStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateDepositStatus>>>
+    export type UpdateDepositStatusMutationBody = BodyType<DepositStatusUpdate>
+    export type UpdateDepositStatusMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update security deposit status
+ */
+export const useUpdateDepositStatus = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDepositStatus>>, TError,{id: number;data: BodyType<DepositStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDepositStatus>>,
+        TError,
+        {id: number;data: BodyType<DepositStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateDepositStatusMutationOptions(options));
     }
 
 export const getListUsersUrl = () => {

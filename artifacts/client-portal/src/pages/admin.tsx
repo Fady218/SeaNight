@@ -22,6 +22,7 @@ import {
   useListProperties,
   useListUsers,
   useUpdateBookingStatus,
+  useUpdateDepositStatus,
   useSeedData,
   useCreateProperty,
   getListBookingsQueryKey,
@@ -31,7 +32,14 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { formatPrice, formatDate, getStatusColor, calculateNights } from "@/lib/utils";
 
-type Tab = "overview" | "bookings" | "properties" | "users";
+type Tab = "overview" | "bookings" | "properties" | "users" | "deposits";
+
+interface DepositAction {
+  bookingId: number;
+  propertyTitle: string;
+  depositAmount: string;
+  action: "refunded" | "deducted";
+}
 
 const CITIES = ["Ain Sokhna", "Hurghada", "El Gouna", "North Coast", "Sharm El Sheikh", "Dahab", "Luxor", "Aswan", "Alexandria", "Cairo"];
 const PROPERTY_TYPES = ["chalet", "yacht", "hotel"];
@@ -66,6 +74,8 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [showAddProperty, setShowAddProperty] = useState(false);
   const [form, setForm] = useState<PropertyFormState>(emptyForm());
+  const [depositAction, setDepositAction] = useState<DepositAction | null>(null);
+  const [depositReason, setDepositReason] = useState("");
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
 
@@ -74,6 +84,7 @@ export default function AdminPage() {
   const { data: properties } = useListProperties();
   const { data: users, isLoading: usersLoading } = useListUsers();
   const updateStatus = useUpdateBookingStatus();
+  const updateDeposit = useUpdateDepositStatus();
   const seedMutation = useSeedData();
   const createProperty = useCreateProperty();
 
@@ -88,6 +99,20 @@ export default function AdminPage() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
+        },
+      }
+    );
+  }
+
+  function handleDepositAction() {
+    if (!depositAction) return;
+    updateDeposit.mutate(
+      { id: depositAction.bookingId, data: { securityDepositStatus: depositAction.action, reason: depositReason } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListBookingsQueryKey() });
+          setDepositAction(null);
+          setDepositReason("");
         },
       }
     );
@@ -150,11 +175,20 @@ export default function AdminPage() {
     active: { label: "Complete", next: "completed", color: "bg-green-600 hover:bg-green-700 text-white" },
   };
 
+  const depositBookings = bookings?.filter(b => b.status === "completed" || b.status === "active") ?? [];
+  const heldCount = depositBookings.filter(b => b.securityDepositStatus === "held").length;
+  const refundedCount = depositBookings.filter(b => b.securityDepositStatus === "refunded").length;
+  const deductedCount = depositBookings.filter(b => b.securityDepositStatus === "deducted").length;
+  const totalHeld = depositBookings
+    .filter(b => b.securityDepositStatus === "held")
+    .reduce((sum, b) => sum + Number(b.securityDeposit), 0);
+
   const navItems: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "bookings", label: "Bookings", icon: <BookOpen className="w-4 h-4" /> },
     { id: "properties", label: "Properties", icon: <Home className="w-4 h-4" /> },
     { id: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
+    { id: "deposits", label: "Deposits", icon: <Shield className="w-4 h-4" /> },
   ];
 
   return (
@@ -381,6 +415,137 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* DEPOSITS TAB */}
+          {activeTab === "deposits" && (
+            <div className="space-y-5">
+              {/* Summary cards */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                  <div className="w-9 h-9 bg-yellow-50 rounded-xl flex items-center justify-center mb-3">
+                    <Clock className="w-4.5 h-4.5 text-yellow-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{heldCount}</div>
+                  <div className="text-sm text-gray-500">Held</div>
+                  <div className="text-xs text-yellow-600 mt-1">{formatPrice(totalHeld)} in escrow</div>
+                </div>
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                  <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center mb-3">
+                    <CheckCircle className="w-4.5 h-4.5 text-green-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{refundedCount}</div>
+                  <div className="text-sm text-gray-500">Refunded</div>
+                  <div className="text-xs text-green-600 mt-1">{formatPrice(refundedCount * 2000)} returned</div>
+                </div>
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                  <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center mb-3">
+                    <X className="w-4.5 h-4.5 text-red-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{deductedCount}</div>
+                  <div className="text-sm text-gray-500">Deducted</div>
+                  <div className="text-xs text-red-500 mt-1">{formatPrice(deductedCount * 2000)} retained</div>
+                </div>
+                <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-5 shadow-sm border border-cyan-100">
+                  <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center mb-3 shadow-sm">
+                    <Shield className="w-4.5 h-4.5 text-cyan-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{depositBookings.length}</div>
+                  <div className="text-sm text-gray-500">Eligible Bookings</div>
+                  <div className="text-xs text-cyan-600 mt-1">Active + Completed</div>
+                </div>
+              </div>
+
+              {/* Deposit table */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-cyan-600" /> Security Deposit Register
+                  </h2>
+                  <p className="text-sm text-gray-400 mt-0.5">Manage deposit refunds and deductions for completed bookings</p>
+                </div>
+                {bookingsLoading ? (
+                  <div className="p-6 space-y-3">
+                    {[1,2,3].map(i => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}
+                  </div>
+                ) : depositBookings.length === 0 ? (
+                  <div className="p-12 text-center text-gray-400">
+                    <Shield className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">No completed or active bookings yet</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-100">
+                          <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Booking</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Property</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Checkout</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Deposit</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Insurance Premium</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Deposit Status</th>
+                          <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {depositBookings.map((b) => {
+                          const propTitle = getPropertyTitle(b.propertyId);
+                          const isHeld = b.securityDepositStatus === "held";
+                          return (
+                            <tr key={b.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 font-medium text-gray-700">#{b.id}</td>
+                              <td className="px-6 py-4 text-gray-900 max-w-xs truncate font-medium">{propTitle}</td>
+                              <td className="px-6 py-4 text-gray-500 text-xs">
+                                <div>{formatDate(b.checkOut)}</div>
+                                <div className={`mt-0.5 font-medium ${b.status === "completed" ? "text-green-600" : "text-purple-600"}`}>
+                                  {b.status}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 font-bold text-gray-900">{formatPrice(b.securityDeposit)}</td>
+                              <td className="px-6 py-4">
+                                <span className="text-orange-600 font-medium">{formatPrice(b.insurancePremium)}</span>
+                                <div className="text-xs text-gray-400">AXA/GIG cut</div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${
+                                  b.securityDepositStatus === "held"
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : b.securityDepositStatus === "refunded"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                                }`}>
+                                  {b.securityDepositStatus}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                {isHeld ? (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setDepositAction({ bookingId: b.id, propertyTitle: propTitle, depositAmount: b.securityDeposit, action: "refunded" })}
+                                      className="px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                    >
+                                      Refund
+                                    </button>
+                                    <button
+                                      onClick={() => setDepositAction({ bookingId: b.id, propertyTitle: propTitle, depositAmount: b.securityDeposit, action: "deducted" })}
+                                      className="px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                    >
+                                      Deduct
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-gray-400 italic">Resolved</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* USERS TAB */}
           {activeTab === "users" && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -433,6 +598,78 @@ export default function AdminPage() {
           )}
         </div>
       </main>
+
+      {/* Deposit Action Dialog */}
+      <Dialog open={!!depositAction} onOpenChange={(open) => { if (!open) { setDepositAction(null); setDepositReason(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {depositAction?.action === "refunded" ? (
+                <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                </div>
+              ) : (
+                <div className="w-7 h-7 bg-red-100 rounded-lg flex items-center justify-center">
+                  <X className="w-4 h-4 text-red-600" />
+                </div>
+              )}
+              {depositAction?.action === "refunded" ? "Refund Security Deposit" : "Deduct Security Deposit"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className={`rounded-xl p-4 border ${depositAction?.action === "refunded" ? "bg-green-50 border-green-100" : "bg-red-50 border-red-100"}`}>
+              <div className="text-sm font-medium text-gray-900">{depositAction?.propertyTitle}</div>
+              <div className="text-xs text-gray-500 mt-0.5">Booking #{depositAction?.bookingId}</div>
+              <div className={`text-lg font-bold mt-2 ${depositAction?.action === "refunded" ? "text-green-700" : "text-red-700"}`}>
+                {depositAction ? formatPrice(depositAction.depositAmount) : ""} EGP
+                <span className="text-sm font-normal ml-2 text-gray-500">
+                  {depositAction?.action === "refunded" ? "→ returned to guest" : "→ retained by owner"}
+                </span>
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700">
+                Reason <span className="text-gray-400">(required for deductions)</span>
+              </Label>
+              <Textarea
+                value={depositReason}
+                onChange={e => setDepositReason(e.target.value)}
+                placeholder={depositAction?.action === "refunded"
+                  ? "e.g. No damages reported, checkout completed cleanly"
+                  : "e.g. Guest damaged AC unit, broken furniture in bedroom"
+                }
+                className="mt-1.5 min-h-20 text-sm"
+              />
+            </div>
+            {depositAction?.action === "deducted" && !depositReason.trim() && (
+              <p className="text-xs text-red-500">A reason is required for deductions.</p>
+            )}
+            <div className="flex gap-3 pt-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => { setDepositAction(null); setDepositReason(""); }}
+              >Cancel</Button>
+              <Button
+                onClick={handleDepositAction}
+                disabled={
+                  updateDeposit.isPending ||
+                  (depositAction?.action === "deducted" && !depositReason.trim())
+                }
+                className={`flex-1 text-white ${depositAction?.action === "refunded" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
+              >
+                {updateDeposit.isPending ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
+                ) : depositAction?.action === "refunded" ? (
+                  "Confirm Refund"
+                ) : (
+                  "Confirm Deduction"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Property Dialog */}
       <Dialog open={showAddProperty} onOpenChange={setShowAddProperty}>

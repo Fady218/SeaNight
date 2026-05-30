@@ -248,6 +248,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /bookings/{id}/deposit:
+    patch:
+      operationId: updateDepositStatus
+      tags: [bookings]
+      summary: Update security deposit status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /users:
     get:
       operationId: listUsers
@@ -576,6 +606,15 @@ components:
       required: [status]
       properties:
         status:
+          type: string
+
+    DepositStatusUpdate:
+      type: object
+      required: [securityDepositStatus]
+      properties:
+        securityDepositStatus:
+          type: string
+        reason:
           type: string
 
     User:

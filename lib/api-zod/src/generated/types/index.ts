@@ -10,6 +10,7 @@ export * from './adminStats';
 export * from './booking';
 export * from './bookingInput';
 export * from './bookingStatusUpdate';
+export * from './depositStatusUpdate';
 export * from './errorResponse';
 export * from './healthStatus';
 export * from './listBookingsParams';
